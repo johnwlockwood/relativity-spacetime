@@ -11,14 +11,12 @@ const baseMass = 5.972e24; // Earth's mass in kg
 
 // Create a container for the Three.js canvas
 document.querySelector<HTMLDivElement>('#app')!.innerHTML = `
-  <div class="container">
-    <div class="three-container" id="three-container"></div>
-    <div class="ui-container">
-      <div class="slider-container">
-        <label>Planet Mass (x10²⁴ kg):</label>
-        <input type="range" id="massSlider" min="1" max="10" value="5.972" step="0.1">
-        <span id="massValue">5.972</span>
-      </div>
+  <div class="three-container" id="three-container"></div>
+  <div class="ui-container">
+    <div class="slider-container">
+      <label>Planet Mass (x10²⁴ kg):</label>
+      <input type="range" id="massSlider" min="1" max="10" value="5.972" step="0.1">
+      <span id="massValue">5.972</span>
     </div>
   </div>
 `
