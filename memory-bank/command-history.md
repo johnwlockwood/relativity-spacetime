@@ -14,8 +14,15 @@ npm install --save package-name
 # Install TypeScript type definitions for a package
 npm install --save-dev @types/package-name
 
-# Example: Install Three.js type definitions without the library itself
+# Install a specific version of a package
+npm install package-name@version
+
+# Examples:
+# Install Three.js type definitions without the library itself
 npm install --save-dev @types/three
+
+# Install Three.js as a dependency with a specific version
+npm install three@0.174.0
 ```
 
 ## Project Development

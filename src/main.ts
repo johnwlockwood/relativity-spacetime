@@ -2,7 +2,8 @@ import './style.css'
 import typescriptLogo from './typescript.svg'
 import viteLogo from '/vite.svg'
 import { setupCounter } from './counter.ts'
-// Three.js types are provided by the src/types/three-cdn.d.ts file
+// Import Three.js as ES module
+import * as THREE from 'three'
 
 // Create a container for the Three.js canvas and the original content
 document.querySelector<HTMLDivElement>('#app')!.innerHTML = `
