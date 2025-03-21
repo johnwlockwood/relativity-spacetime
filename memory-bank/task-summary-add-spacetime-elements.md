@@ -42,6 +42,11 @@ Create a new git branch and port the spacetime visualization from the prototype 
    - Add styles for the slider container
    - Ensure proper positioning and appearance of UI elements
 
+5. Updated the layout to match the prototype:
+   - Made the Three.js scene take up the entire window
+   - Positioned the UI controls in a box with a light gray background in the top left corner
+   - Simplified the HTML structure to remove unnecessary container elements
+
 ## Result
 Successfully implemented the spacetime visualization with a mass slider control. The visualization shows how mass affects spacetime, with the grid deforming more as the mass increases. This visually demonstrates Einstein's theory of general relativity, where mass curves spacetime.
 
@@ -57,4 +62,6 @@ Successfully implemented the spacetime visualization with a mass slider control.
 - The mass slider allows for interactive exploration of different mass values
 - The grid deformation is properly scaled for visibility
 - The Earth sphere provides a reference point for the spacetime deformation
+- The fullscreen layout provides a more immersive experience
+- The UI controls are easily accessible in the top left corner
 - Future improvements could include adding the other sliders and elements from the prototype
