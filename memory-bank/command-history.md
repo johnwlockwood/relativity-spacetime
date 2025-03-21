@@ -1,46 +1,25 @@
 # Command History
 
-This file documents useful commands used throughout the project, organized by task and purpose.
+This file documents useful, reusable commands for the project, organized by purpose.
 
-## Add Three.js from CDN with TypeScript Support (2025-03-21)
+## Package Management
 
-### Git Commands
 ```bash
-# Create a new branch for the Three.js implementation
-git checkout -b add-threejs
-```
+# Install a package as a development dependency
+npm install --save-dev package-name
 
-### NPM Commands
-```bash
-# Install Three.js type definitions without the library itself
+# Install a package as a runtime dependency
+npm install --save package-name
+
+# Install TypeScript type definitions for a package
+npm install --save-dev @types/package-name
+
+# Example: Install Three.js type definitions without the library itself
 npm install --save-dev @types/three
-
-# Run the development server
-npm run dev
 ```
 
-### File Management
-```bash
-# Create directories
-mkdir -p memory-bank
-mkdir -p src/types
+## Project Development
 
-# Remove files
-rm src/three.d.ts
-```
-
-## General Purpose Commands
-
-### Directory Operations
-```bash
-# Create a directory (and parent directories if they don't exist)
-mkdir -p directory/subdirectory
-
-# List files in a directory
-ls -la directory
-```
-
-### Development Servers
 ```bash
 # Start a Vite development server
 npm run dev
@@ -50,4 +29,20 @@ npm run build
 
 # Preview the built project
 npm run preview
+```
+
+## File Management
+
+```bash
+# Create a directory (and parent directories if they don't exist)
+mkdir -p directory/subdirectory
+
+# Create multiple directories at once
+mkdir -p dir1 dir2 dir3
+
+# Remove a file
+rm filename
+
+# Remove a directory and its contents
+rm -rf directory
 ```

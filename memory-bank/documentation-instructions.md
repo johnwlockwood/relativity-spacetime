@@ -17,9 +17,15 @@ At the end of each task, create or update the following:
      - Any challenges encountered and how they were resolved
 
 2. **Command History**
-   - Document all successful commands used during the task
-   - Include explanations of what each command does
-   - Note any important flags or options used
+   - Document general, reusable commands that would be useful for future tasks
+   - Focus on project-specific commands, build tools, and development workflows
+   - Include explanations of what each command does and important flags or options
+   - Avoid recording:
+     - Specific git commands (like branch names or commit messages)
+     - Information retrieval commands (like `git status` or `ls directory`)
+     - Commands that are already well-documented elsewhere
+   - Group commands by purpose rather than by task
+   - Only add new commands that aren't already in the history
 
 3. **Update Task List** (if applicable)
    - If maintaining a task list, mark the completed task
