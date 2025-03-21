@@ -6,6 +6,7 @@ This directory serves as a knowledge repository for tasks completed in the proje
 ## Contents
 
 - **Task Summaries**: Files named `task-summary-[task-name].md` that document individual tasks
+- **Task History**: A chronological record of tasks with links to their branches and summaries
 - **Documentation Instructions**: Guidelines for maintaining this memory bank
 - **Command History**: Record of useful commands and their purposes
 

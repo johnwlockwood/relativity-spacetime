@@ -27,7 +27,16 @@ At the end of each task, create or update the following:
    - Group commands by purpose rather than by task
    - Only add new commands that aren't already in the history
 
-3. **Update Task List** (if applicable)
+3. **Update Task History**
+   - Add a new entry to the `task-history.md` file with:
+     - The current date
+     - A short task name
+     - The git branch name where the task was implemented
+     - A link to the task summary file
+     - A brief description of the task
+   - Keep entries in reverse chronological order (newest at the top)
+
+4. **Update Task List** (if applicable)
    - If maintaining a task list, mark the completed task
    - Add any new tasks that were identified during the current task
 
