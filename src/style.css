@@ -40,6 +40,44 @@ h1 {
   margin: 0 auto;
   padding: 2rem;
   text-align: center;
+  width: 100%;
+}
+
+/* Container for Three.js and content */
+.container {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+  width: 100%;
+}
+
+/* Three.js container */
+.three-container {
+  width: 100%;
+  height: 300px;
+  border-radius: 8px;
+  overflow: hidden;
+  background-color: #1a1a1a;
+}
+
+/* Content container */
+.content {
+  width: 100%;
+}
+
+@media (min-width: 768px) {
+  .container {
+    flex-direction: row;
+  }
+  
+  .three-container {
+    flex: 1;
+    height: 400px;
+  }
+  
+  .content {
+    flex: 1;
+  }
 }
 
 .logo {
