@@ -1,13 +1,13 @@
 import './style.css'
 // Import Three.js as ES module
 import * as THREE from 'three'
-import { Satellite } from './Satellite'
+// import { Satellite } from './Satellite'
 
 // Constants (real units, scaled for visualization)
 const G = 6.6743e-11; // m³ kg⁻¹ s⁻²
 const c = 299792458; // m/s
 const earthRadius = 1; // Visual radius
-const baseMass = 5.972e24; // Earth's mass in kg
+// const baseMass = 5.972e24; // Earth's mass in kg
 
 // Create a container for the Three.js canvas
 document.querySelector<HTMLDivElement>('#app')!.innerHTML = `
