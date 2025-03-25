@@ -40,7 +40,7 @@ const setupThreeScene = (): void => {
     0.1,
     1000
   )
-  camera.position.set(5, 2, 8)
+  camera.position.set(-4, 2, 8)
   camera.lookAt(0, 0, 0)
 
   // Create renderer
@@ -53,7 +53,7 @@ const setupThreeScene = (): void => {
   scene.add(ambientLight)
 
   // Main directional light (sun-like)
-  const directionalLight = new THREE.DirectionalLight(0xffffff, 1.5) // Increased intensity
+  const directionalLight = new THREE.DirectionalLight(0xffffff, 2.5) // Increased intensity
   directionalLight.position.set(-5, 5, 3)
   scene.add(directionalLight)
 
