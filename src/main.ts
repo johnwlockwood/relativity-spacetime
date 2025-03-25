@@ -1,6 +1,9 @@
 import './style.css'
 // Import Three.js as ES module
 import * as THREE from 'three'
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+// Import Earth model
+import earthModelPath from './planet_earth/scene.gltf?url';
 // import { Satellite } from './Satellite'
 
 // Constants (real units, scaled for visualization)
@@ -53,16 +56,61 @@ const setupThreeScene = (): void => {
   directionalLight.position.set(-5, 5, 3)
   scene.add(directionalLight)
 
-  // Earth
-  const earthGeometry = new THREE.SphereGeometry(earthRadius, 32, 32)
-  const earthMaterial = new THREE.MeshPhongMaterial({
-    color: "rgb(92, 190, 239)",
-    transparent: true,
-    opacity: 0.99,
-    shininess: 30
-  })
-  const earth = new THREE.Mesh(earthGeometry, earthMaterial)
-  scene.add(earth)
+  // Add a point light to highlight the Earth model
+  const pointLight = new THREE.PointLight(0xffffff, 1, 100)
+  pointLight.position.set(2, 3, 4)
+  scene.add(pointLight)
+
+  // Earth - Load 3D model
+  let earth: THREE.Object3D | null = null;
+  const loader = new GLTFLoader();
+  loader.load(
+    earthModelPath,
+    (gltf) => {
+      earth = gltf.scene;
+      // Scale the model appropriately - increase size for better visibility
+      earth.scale.set(2, 2, 2);
+      // Center the model
+      earth.position.set(0, 0, 0);
+      // Add the model to the scene
+      scene.add(earth);
+      
+      // Apply materials to all meshes in the model for better appearance
+      earth.traverse((child) => {
+        if (child instanceof THREE.Mesh) {
+          // Enhance material properties
+          if (child.material) {
+            child.material.needsUpdate = true;
+            if (Array.isArray(child.material)) {
+              child.material.forEach(mat => {
+                if (mat.shininess !== undefined) {
+                  mat.shininess = 30;
+                }
+              });
+            } else if (child.material.shininess !== undefined) {
+              child.material.shininess = 30;
+            }
+          }
+        }
+      });
+    },
+    (xhr) => {
+      console.log((xhr.loaded / xhr.total * 100) + '% loaded');
+    },
+    (error) => {
+      console.error('An error happened loading the Earth model:', error);
+      // Fallback to simple sphere if model fails to load
+      const earthGeometry = new THREE.SphereGeometry(earthRadius, 32, 32);
+      const earthMaterial = new THREE.MeshPhongMaterial({
+        color: "rgb(92, 190, 239)",
+        transparent: true,
+        opacity: 0.99,
+        shininess: 30
+      });
+      earth = new THREE.Mesh(earthGeometry, earthMaterial);
+      scene.add(earth);
+    }
+  );
 
   // Spacetime grid
   const gridSize = 10
@@ -113,6 +161,12 @@ const setupThreeScene = (): void => {
   // Animation loop
   const animate = (): void => {
     requestAnimationFrame(animate)
+    
+    // Rotate the Earth model if it's loaded
+    if (earth) {
+      earth.rotation.y += 0.005; // Slow rotation around y-axis
+    }
+    
     renderer.render(scene, camera)
   }
 
