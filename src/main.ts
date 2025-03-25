@@ -12,10 +12,10 @@ import { Satellite } from './Satellite'
 // Constants (real units, scaled for visualization)
 const G = 6.6743e-11; // m³ kg⁻¹ s⁻²
 const c = 299792458; // m/s
-const earthRadius = 2; // Visual radius
+const earthRadius = 1; // Visual radius
 const satelliteRadius = 6; // Increased orbit radius to position satellites farther away
-const numSatellites = 4;
-const baseMass = 5.972e24; // Earth's mass in kg
+const numSatellites = 9;
+// const baseMass = 5.972e24; // Earth's mass in kg
 const baseSatelliteSpeed = 3870; // m/s (GPS satellite speed)
 
 // Create a container for the Three.js canvas
@@ -99,7 +99,7 @@ const setupThreeScene = (): void => {
     (gltf) => {
       earth = gltf.scene;
       // Scale the model appropriately - increase size for better visibility
-      earth.scale.set(2, 2, 2);
+      earth.scale.set(earthRadius, earthRadius, earthRadius);
       // Center the model
       earth.position.set(0, 0, 0);
       // Add the model to the scene
@@ -238,12 +238,13 @@ const setupThreeScene = (): void => {
   scene.add(receiverParent);
   
   // Receiver
-  const receiverGeometry = new THREE.BoxGeometry(0.25, 0.25, 0.25);
+  const satelliteScale = 0.2
+  const receiverGeometry = new THREE.BoxGeometry(satelliteScale, satelliteScale, satelliteScale);
   const receiverMaterial = new THREE.MeshPhongMaterial({
     color: 0x00ff00,
     shininess: 60,
     emissive: 0x00ff00, // Strong glow effect
-    emissiveIntensity: 0.5
+    emissiveIntensity: 0.1
   });
   const receiver = new THREE.Mesh(receiverGeometry, receiverMaterial);
   
@@ -254,10 +255,6 @@ const setupThreeScene = (): void => {
   // Add the receiver to the parent object
   receiverParent.add(receiver);
   
-  // Add a point light to the receiver to make it glow
-  const receiverLight = new THREE.PointLight(0x00ff00, 2, 3);
-  receiverLight.position.set(0, 0, 0);
-  receiver.add(receiverLight);
   
   // Signal lines with increased visibility
   const lineMaterial = new THREE.LineBasicMaterial({ 
