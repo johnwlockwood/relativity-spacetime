@@ -48,18 +48,38 @@ const setupThreeScene = (): void => {
   renderer.setSize(container.clientWidth, container.clientHeight)
   container.appendChild(renderer.domElement)
 
-  // Add lights
-  const ambientLight = new THREE.AmbientLight(0x404040, 0.5)
+  // Add lights - enhanced for better Earth illumination
+  const ambientLight = new THREE.AmbientLight(0xffffff, 1.0) // Increased intensity and whiter light
   scene.add(ambientLight)
 
-  const directionalLight = new THREE.DirectionalLight(0xffffff, 1)
+  // Main directional light (sun-like)
+  const directionalLight = new THREE.DirectionalLight(0xffffff, 1.5) // Increased intensity
   directionalLight.position.set(-5, 5, 3)
   scene.add(directionalLight)
 
-  // Add a point light to highlight the Earth model
-  const pointLight = new THREE.PointLight(0xffffff, 1, 100)
-  pointLight.position.set(2, 3, 4)
-  scene.add(pointLight)
+  // Add multiple point lights to highlight the Earth model from different angles
+  const pointLight1 = new THREE.PointLight(0xffffff, 1.5, 100)
+  pointLight1.position.set(2, 3, 4)
+  scene.add(pointLight1)
+  
+  const pointLight2 = new THREE.PointLight(0xffffff, 1.0, 100)
+  pointLight2.position.set(-3, 2, 5)
+  scene.add(pointLight2)
+  
+  const pointLight3 = new THREE.PointLight(0xffffff, 1.0, 100)
+  pointLight3.position.set(4, -2, 3)
+  scene.add(pointLight3)
+  
+  // Add a spotlight specifically targeting the Earth
+  const spotLight = new THREE.SpotLight(0xffffff, 2.0)
+  spotLight.position.set(10, 10, 10)
+  spotLight.angle = Math.PI / 6
+  spotLight.penumbra = 0.2
+  spotLight.decay = 1
+  spotLight.distance = 50
+  spotLight.target.position.set(0, 0, 0) // Target the center where Earth is
+  scene.add(spotLight)
+  scene.add(spotLight.target)
 
   // Earth - Load 3D model
   let earth: THREE.Object3D | null = null;
@@ -83,12 +103,20 @@ const setupThreeScene = (): void => {
             child.material.needsUpdate = true;
             if (Array.isArray(child.material)) {
               child.material.forEach(mat => {
+                // Make material opaque
+                mat.transparent = false;
+                mat.opacity = 1.0;
                 if (mat.shininess !== undefined) {
                   mat.shininess = 30;
                 }
               });
-            } else if (child.material.shininess !== undefined) {
-              child.material.shininess = 30;
+            } else {
+              // Make material opaque
+              child.material.transparent = false;
+              child.material.opacity = 1.0;
+              if (child.material.shininess !== undefined) {
+                child.material.shininess = 30;
+              }
             }
           }
         }

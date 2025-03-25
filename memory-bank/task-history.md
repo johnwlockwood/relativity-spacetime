@@ -6,6 +6,7 @@ This file maintains a chronological record of tasks completed in the project, as
 
 | Date | Task | Branch | Summary File | Description |
 |------|------|--------|--------------|-------------|
+| 2025-03-25 | Add 3D Earth Model | add-earth-model | [task-summary-add-earth-model.md](./task-summary-add-earth-model.md) | Replaced the simple Earth sphere with a detailed 3D Earth model from the planet_earth directory using GLTFLoader |
 | 2025-03-21 | Add Initial Spacetime Elements | add-spacetime-elements | [task-summary-add-spacetime-elements.md](./task-summary-add-spacetime-elements.md) | Ported spacetime visualization from prototype to main Three.js scene with mass slider |
 | 2025-03-21 | Add Three.js from CDN | add-threejs | [task-summary-add-threejs.md](./task-summary-add-threejs.md) | Added Three.js from a CDN to the Vite project with TypeScript support |
 
