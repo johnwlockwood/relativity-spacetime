@@ -5,7 +5,7 @@ import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 // Import Earth model
 import earthModelPath from './planet_earth/scene.gltf?url';
 // Import Satellite model
-import satelliteModelPath from './gps_satellite/scene.gltf?url';
+import satelliteModelPath from './low_poly_satellite/scene.gltf?url';
 // Import Satellite class
 import { Satellite } from './Satellite'
 
@@ -161,7 +161,7 @@ const setupThreeScene = (): void => {
       (gltf) => {
         const model = gltf.scene;
         // Scale the model appropriately - reduced for better visibility
-        model.scale.set(0.0001, 0.0001, 0.0001); // Very small scale
+        model.scale.set(0.0005, 0.0005, 0.0005); // Very small scale
         // Rotate the model to make it more visible
         model.rotation.x = Math.PI / 4;
         // Position the model
