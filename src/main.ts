@@ -28,7 +28,7 @@ const setupThreeScene = (): void => {
 
   // Create scene
   const scene = new THREE.Scene()
-  scene.background = new THREE.Color(0x1a1a1a)
+  scene.background = new THREE.Color("rgb(29, 34, 55)")
 
   // Create camera
   const camera = new THREE.PerspectiveCamera(
@@ -56,9 +56,9 @@ const setupThreeScene = (): void => {
   // Earth
   const earthGeometry = new THREE.SphereGeometry(earthRadius, 32, 32)
   const earthMaterial = new THREE.MeshPhongMaterial({
-    color: 0x0066ff,
+    color: "rgb(92, 190, 239)",
     transparent: true,
-    opacity: 0.9,
+    opacity: 0.99,
     shininess: 30
   })
   const earth = new THREE.Mesh(earthGeometry, earthMaterial)
@@ -66,11 +66,11 @@ const setupThreeScene = (): void => {
 
   // Spacetime grid
   const gridSize = 10
-  const gridStep = 0.1
+  const gridStep = 0.2
   // Create a proper 3D surface grid
   const gridGeometry = new THREE.PlaneGeometry(gridSize, gridSize, gridSize / gridStep, gridSize / gridStep)
   const gridMaterial = new THREE.MeshBasicMaterial({
-    color: 0xdb7f23,
+    color: "rgb(0, 161, 140)",
     wireframe: true,
     side: THREE.DoubleSide  // Make the grid visible from both sides
   })
