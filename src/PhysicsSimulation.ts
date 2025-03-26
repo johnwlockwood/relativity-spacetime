@@ -30,6 +30,10 @@ export class PhysicsSimulation {
     }
 
     setPaused(paused: boolean) {
+        if (this._isPaused && !paused) {
+            // When unpausing, reset lastUpdateTime to prevent large delta
+            this.lastUpdateTime = performance.now();
+        }
         this._isPaused = paused;
     }
 
