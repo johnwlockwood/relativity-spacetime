@@ -5,7 +5,6 @@ export default defineConfig({
     base: '/relativity-spacetime/',
     build: {
         outDir: 'docs',
-        // chunkSizeWarningLimit: 1000, // in kB
         rollupOptions: {
             output: {
                 manualChunks: {
