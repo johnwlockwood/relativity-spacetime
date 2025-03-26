@@ -3,6 +3,7 @@ import './style.css'
 import * as THREE from 'three'
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js'
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { PhysicsSimulation } from './PhysicsSimulation';
 // Import Earth model
 const earthModelPath = `${import.meta.env.BASE_URL}planet_earth/scene.gltf`;
 // Import Satellite model
@@ -365,81 +366,50 @@ const setupThreeScene = (): void => {
     updateGrid(massVal * 1e24, expansionFactor);
   });
 
+  // Create physics simulation
+  const physicsSimulation = new PhysicsSimulation(satellites);
+
   // Pause/Resume and Reset functionality
-  let isPaused = false;
   pauseButton.addEventListener('click', () => {
-    isPaused = !isPaused;
-    pauseButton.textContent = isPaused ? 'Resume' : 'Pause';
+    physicsSimulation.setPaused(!physicsSimulation.isPaused);
+    pauseButton.textContent = physicsSimulation.isPaused ? 'Resume' : 'Pause';
   });
 
   resetButton.addEventListener('click', () => {
-    simulationTime = 0;
-    orbitTime = 0; // Reset orbit time
-    expansionFactor = 1.0;
-    updateGrid(parseFloat(massSlider.value) * 1e24, expansionFactor);
+    physicsSimulation.reset();
+    updateGrid(parseFloat(massSlider.value) * 1e24, 1.0);
     universeAgeElement.textContent = '0 years';
   });
 
-  // Simulation variables
-  let simulationTime = 0;
-  let orbitTime = 0; // Separate time for satellite orbits
-
   // Animation loop
-  const animate = (): void => {
+  const animate = (timestamp = 0): void => {
     requestAnimationFrame(animate);
     const rotation_speed = 0.001;
 
+    // Update physics simulation
+    physicsSimulation.update(timestamp, parseFloat(massSlider.value) * 1e24);
+
+    // Update UI with current universe age
+    universeAgeElement.textContent = `${(physicsSimulation.getUniverseAge() / 1e9).toFixed(1)} billion years`;
+
+    // Update grid with current expansion
+    updateGrid(parseFloat(massSlider.value) * 1e24, physicsSimulation.getExpansionFactor());
+
     // Rotate the Earth model if it's loaded
     if (earth) {
-      earth.rotation.y += rotation_speed; // Slow rotation around y-axis
+      earth.rotation.y += rotation_speed;
     }
 
     // Rotate the receiver parent to match Earth's rotation
-    receiverParent.rotation.y += rotation_speed; // Same rotation speed as Earth
+    receiverParent.rotation.y += rotation_speed;
 
     // Update controls
     controls.update();
 
-    // Update simulation time and universe age only if not paused
-    if (!isPaused) {
-      const timeSpeed = 4132.2; // Adjusted for visible ticking of universe age
-      const dt = (0.016 * timeSpeed) / 1e3; // Adjusted scaling for universe age
-      simulationTime += dt;
-
-      // Separate dt for orbit to maintain original speed
-      const orbitDt = (0.016 * 10.0) / 1e3; // Original time speed for orbits
-      orbitTime += orbitDt;
-
-      // Scale simulationTime to represent the age of the universe
-      // Reach 13.8 billion years in 300 seconds (5 minutes)
-      const simulationDuration = 300;
-      let universeAge = (simulationTime / simulationDuration) * realUniverseAge;
-      universeAge = Math.min(universeAge, realUniverseAge); // Cap at 13.8 billion years
-      universeAgeElement.textContent = `${(universeAge / 1e9).toFixed(1)} billion years`;
-
-      // Update expansion factor (simulating cosmic expansion)
-      expansionFactor += expansionRate * dt;
-      expansionFactor = Math.min(expansionFactor, 3.0); // Cap at 3x size
-
-      // Update grid with current mass and expansion
-      const mass = parseFloat(massSlider.value) * 1e24;
-      updateGrid(mass, expansionFactor);
-    }
-
-    // Update satellite positions and clocks
+    // Update satellite positions from physics simulation
+    const satellitePositions = physicsSimulation.getSatellitePositions();
     for (let i = 0; i < numSatellites; i++) {
-      // Calculate new position based on orbit using orbitTime
-      const theta = (i / numSatellites) * Math.PI * 2 + orbitTime * 0.5; // Use orbitTime
-      const x = satelliteRadius * Math.cos(theta);
-      const z = satelliteRadius * Math.sin(theta); // Use z instead of y for horizontal orbit
-      satellites[i].setPosition(x, 0, z); // Position in the x-z plane
-
-      // Update satellite clock (using simulationTime for consistency with time dilation)
-      const mass = parseFloat(massSlider.value) * 1e24;
-      const delta = calculateDelta(satellites[i], mass);
-      const dt = (0.016 * 1132.2) / 1e3; // Same dt as universe age for clock consistency
-      const dtau = (1 + delta) * dt;
-      satellites[i].clock += satellites[i].clockRate * dtau;
+      satellites[i].setPosition(satellitePositions[i].x, satellitePositions[i].y, satellitePositions[i].z);
     }
 
     // Update lines - use receiver's world position
