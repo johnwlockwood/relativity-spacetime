@@ -7,12 +7,17 @@ export default defineConfig({
         outDir: 'docs',
         rollupOptions: {
             output: {
+                // Disable hash in filenames
+                entryFileNames: `assets/[name].js`,
+                chunkFileNames: `assets/[name].js`,
+                assetFileNames: `assets/[name].[ext]`,
                 manualChunks: {
                     // Create separate chunk for Three.js core files
                     three_core: ['three'],
                     three_extras: [
                         'three/addons/loaders/GLTFLoader.js']
-                }
+                },
+
             }
         }
     },
