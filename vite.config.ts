@@ -13,11 +13,7 @@ export default defineConfig({
                     three_core: ['three'],
                     three_extras: [
                         'three/addons/loaders/GLTFLoader.js']
-                },
-                // Disable hash in filenames
-                // entryFileNames: `assets/[name].js`,
-                // chunkFileNames: `assets/[name].js`,
-                // assetFileNames: `assets/[name].[ext]`
+                }
             }
         }
     },
