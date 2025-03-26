@@ -17,8 +17,7 @@ const c = 299792458; // m/s
 const earthRadius = 1; // Visual radius
 const satelliteRadius = 6; // Increased orbit radius to position satellites farther away
 const numSatellites = 9;
-const baseSatelliteSpeed = 3870; // m/s (GPS satellite speed)
-const realUniverseAge = 13.8e9; // Real age of the universe in years (13.8 billion years)
+// These constants are now used in PhysicsSimulation.ts
 
 // Create a container for the Three.js canvas
 document.querySelector<HTMLDivElement>('#app')!.innerHTML = `
@@ -334,7 +333,6 @@ const setupThreeScene = (): void => {
 
     // Scale the grid to simulate cosmic expansion
     grid.scale.set(expansion, expansion, 1); // Expand in x and y directions
-    console.log('Expansion factor:', expansion); // Log to verify
 
     gridGeometry.attributes.position.needsUpdate = true;
   }
@@ -355,17 +353,43 @@ const setupThreeScene = (): void => {
     updateGrid(massVal * 1e24, expansionFactor);
   });
 
-  // Create physics simulation
-  const physicsSimulation = new PhysicsSimulation(satellites);
+  // Physics simulation setup
+  let physicsSimulation: PhysicsSimulation;
+  let physicsWorker: Worker | null = null;
+
+  try {
+    // Try to use Web Worker first
+    physicsWorker = new Worker(new URL('./physics.worker.ts', import.meta.url), {
+      type: 'module'
+    });
+    physicsWorker.postMessage({
+      type: 'init',
+      payload: { satellites }
+    });
+  } catch (e) {
+    console.warn('Web Workers not supported, falling back to main thread');
+    physicsSimulation = new PhysicsSimulation(satellites);
+  }
 
   // Pause/Resume and Reset functionality
   pauseButton.addEventListener('click', () => {
-    physicsSimulation.setPaused(!physicsSimulation.isPaused);
-    pauseButton.textContent = physicsSimulation.isPaused ? 'Resume' : 'Pause';
+    if (physicsWorker) {
+      physicsWorker.postMessage({
+        type: 'pause',
+        payload: { paused: !pauseButton.textContent?.includes('Resume') }
+      });
+    } else {
+      physicsSimulation.setPaused(!physicsSimulation.isPaused);
+    }
+    pauseButton.textContent = pauseButton.textContent?.includes('Pause') ? 'Resume' : 'Pause';
   });
 
   resetButton.addEventListener('click', () => {
-    physicsSimulation.reset();
+    if (physicsWorker) {
+      physicsWorker.postMessage({ type: 'reset' });
+    } else {
+      physicsSimulation.reset();
+    }
     updateGrid(parseFloat(massSlider.value) * 1e24, 1.0);
     universeAgeElement.textContent = '0 years';
   });
@@ -374,43 +398,56 @@ const setupThreeScene = (): void => {
   const animate = (timestamp = 0): void => {
     requestAnimationFrame(animate);
 
-    // Update physics simulation
-    physicsSimulation.update(timestamp, parseFloat(massSlider.value) * 1e24);
-
-    // Update UI with current universe age
-    universeAgeElement.textContent = `${(physicsSimulation.getUniverseAge() / 1e9).toFixed(1)} billion years`;
-
-    // Update grid with current expansion
-    updateGrid(parseFloat(massSlider.value) * 1e24, physicsSimulation.getExpansionFactor());
-
-    // Update Earth rotation from physics simulation
-    if (earth) {
-      earth.rotation.y = physicsSimulation.getEarthRotation();
+    // Update physics
+    if (physicsWorker) {
+      physicsWorker.postMessage({
+        type: 'update',
+        payload: {
+          timestamp,
+          mass: parseFloat(massSlider.value) * 1e24
+        }
+      });
+    } else {
+      physicsSimulation.update(timestamp, parseFloat(massSlider.value) * 1e24);
     }
-
-    // Update receiver rotation from physics simulation
-    receiverParent.rotation.y = physicsSimulation.getEarthRotation();
 
     // Update controls
     controls.update();
-
-    // Update satellite positions from physics simulation
-    const satellitePositions = physicsSimulation.getSatellitePositions();
-    for (let i = 0; i < numSatellites; i++) {
-      satellites[i].setPosition(satellitePositions[i].x, satellitePositions[i].y, satellitePositions[i].z);
-    }
-
-    // Update lines - use receiver's world position
-    const receiverWorldPosition = new THREE.Vector3();
-    receiver.getWorldPosition(receiverWorldPosition);
-
-    // Update lines to connect satellites to the receiver's world position
-    for (let i = 0; i < numSatellites; i++) {
-      lines[i].geometry.setFromPoints([satellites[i].position, receiverWorldPosition]);
-    }
-
     renderer.render(scene, camera);
   };
+
+  // Handle worker messages
+  if (physicsWorker) {
+    physicsWorker.onmessage = (e) => {
+      const { type, payload } = e.data;
+      if (type === 'update') {
+        // Update UI
+        universeAgeElement.textContent = `${(payload.universeAge / 1e9).toFixed(1)} billion years`;
+        
+        // Update grid
+        updateGrid(parseFloat(massSlider.value) * 1e24, payload.expansion);
+        
+        // Update Earth and receiver rotation
+        if (earth) earth.rotation.y = payload.rotation;
+        receiverParent.rotation.y = payload.rotation;
+        
+        // Update satellite positions
+        for (let i = 0; i < numSatellites; i++) {
+          satellites[i].setPosition(payload.positions[i].x, payload.positions[i].y, payload.positions[i].z);
+        }
+        
+        // Update lines
+        const receiverWorldPosition = new THREE.Vector3();
+        receiver.getWorldPosition(receiverWorldPosition);
+        for (let i = 0; i < numSatellites; i++) {
+          lines[i].geometry.setFromPoints([
+            new THREE.Vector3(payload.positions[i].x, payload.positions[i].y, payload.positions[i].z),
+            receiverWorldPosition
+          ]);
+        }
+      }
+    };
+  }
 
   animate();
 

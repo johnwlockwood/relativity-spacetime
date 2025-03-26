@@ -6,8 +6,8 @@ export class PhysicsSimulation {
     private c = 299792458; // m/s
     private earthRadius = 1;
     private satelliteRadius = 6;
-    private baseSatelliteSpeed = 3870; // m/s
-    private realUniverseAge = 13.8e9; // years
+    private baseSatelliteSpeed = 3870; // m/s (GPS satellite speed)
+    private realUniverseAge = 13.8e9; // Real age of the universe in years (13.8 billion years)
     private expansionRate = 0.005;
     
     private satellites: Satellite[] = [];

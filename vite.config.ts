@@ -3,6 +3,20 @@ import { visualizer } from 'rollup-plugin-visualizer'
 
 export default defineConfig({
     base: '/relativity-spacetime/',
+    worker: {
+        format: 'es',
+        plugins: () => [],
+        rollupOptions: {
+            output: {
+                // Disable hash in filenames
+                entryFileNames: `assets/[name].js`,
+                chunkFileNames: `assets/[name].js`,
+                assetFileNames: `assets/[name].[ext]`,
+                format: 'es',
+                inlineDynamicImports: true
+            }
+        }
+    },
     build: {
         outDir: 'docs',
         rollupOptions: {
