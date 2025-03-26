@@ -317,7 +317,6 @@ const setupThreeScene = (): void => {
 
   // Update spacetime grid with expansion
   let expansionFactor = 1.0; // Initial scale of the universe
-  const expansionRate = 0.005; // Increased rate for more noticeable expansion
 
   function updateGrid(mass: number, expansion: number) {
     const k = (mass * G) / (c * c) * 3e2 / expansion; // Scale k inversely with expansion
@@ -338,16 +337,6 @@ const setupThreeScene = (): void => {
     console.log('Expansion factor:', expansion); // Log to verify
 
     gridGeometry.attributes.position.needsUpdate = true;
-  }
-
-  // Calculate time dilation delta
-  function calculateDelta(satellite: Satellite, mass: number): number {
-    const r = satellite.position.length();
-    const phiSat = -G * mass / r;
-    const phiReceiver = -G * mass / earthRadius;
-    const v = baseSatelliteSpeed / 1e6; // Scaled down for simulation
-    const delta = (phiSat - phiReceiver) / (c * c) - (v * v) / (2 * c * c);
-    return delta * 1e6; // Exaggerated for visibility
   }
 
   // Mass slider elements
