@@ -16,8 +16,8 @@ const c = 299792458; // m/s
 const earthRadius = 1; // Visual radius
 const satelliteRadius = 6; // Increased orbit radius to position satellites farther away
 const numSatellites = 9;
-// const baseMass = 5.972e24; // Earth's mass in kg
 const baseSatelliteSpeed = 3870; // m/s (GPS satellite speed)
+const realUniverseAge = 13.8e9; // Real age of the universe in years (13.8 billion years)
 
 // Create a container for the Three.js canvas
 document.querySelector<HTMLDivElement>('#app')!.innerHTML = `
@@ -27,6 +27,15 @@ document.querySelector<HTMLDivElement>('#app')!.innerHTML = `
       <label>Planet Mass (x10²⁴ kg):</label>
       <input type="range" id="massSlider" min="1" max="10" value="5.972" step="0.1">
       <span id="massValue">5.972</span>
+    </div>
+    <div class="timeline-container">
+      <label>Age of Universe:</label>
+      <span id="universeAge">0 years</span>
+      <span id="nowLabel" class="now-label"> (This is "Now")</span>
+    </div>
+    <div class="button-container">
+      <button id="pauseButton">Pause</button>
+      <button id="resetButton">Reset</button>
     </div>
   </div>
 `
@@ -38,14 +47,26 @@ const setupThreeScene = (): void => {
 
   // Create scene
   const scene = new THREE.Scene()
-  scene.background = new THREE.Color(0x1d2237) // Dark blue background
+
+  // Add cosmic background (starry skybox)
+  const textureLoader = new THREE.CubeTextureLoader();
+  const skyboxTextures = [
+    `${import.meta.env.BASE_URL}textures/cube/MilkyWay/dark-s_px.jpg`,
+    `${import.meta.env.BASE_URL}textures/cube/MilkyWay/dark-s_nx.jpg`,
+    `${import.meta.env.BASE_URL}textures/cube/MilkyWay/dark-s_py.jpg`,
+    `${import.meta.env.BASE_URL}textures/cube/MilkyWay/dark-s_ny.jpg`,
+    `${import.meta.env.BASE_URL}textures/cube/MilkyWay/dark-s_pz.jpg`,
+    `${import.meta.env.BASE_URL}textures/cube/MilkyWay/dark-s_nz.jpg`
+  ];
+  const skybox = textureLoader.load(skyboxTextures);
+  scene.background = skybox;
 
   // Create renderer
   const renderer = new THREE.WebGLRenderer({
     antialias: true,
     alpha: true // Enable alpha
   })
-  renderer.setClearColor(0x1d2237, 1) // Set clear color to dark blue
+  renderer.setClearColor(0x1d2237, 1) // Set clear color to dark blue (fallback if skybox fails)
   renderer.setSize(container.clientWidth, container.clientHeight)
   container.appendChild(renderer.domElement)
 
@@ -265,7 +286,6 @@ const setupThreeScene = (): void => {
   // Add the receiver to the parent object
   receiverParent.add(receiver);
 
-
   // Signal lines with increased visibility
   const lineMaterial = new THREE.LineBasicMaterial({
     color: 0x00ffff, // Bright cyan color for better visibility
@@ -280,7 +300,7 @@ const setupThreeScene = (): void => {
   }
 
   // Spacetime grid
-  const gridSize = 10
+  const gridSize = 10 // Increased size for better visibility
   const gridStep = 0.2
   // Create a proper 3D surface grid
   const gridGeometry = new THREE.PlaneGeometry(gridSize, gridSize, gridSize / gridStep, gridSize / gridStep)
@@ -291,25 +311,32 @@ const setupThreeScene = (): void => {
   })
   const grid = new THREE.Mesh(gridGeometry, gridMaterial)
   grid.rotation.x = -Math.PI / 2 // Rotate to make it horizontal (XZ plane)
-  grid.position.y = -0.5 // Slightly below Earth
+  grid.position.y = -1.0 // Lowered to make expansion more visible
   scene.add(grid)
 
-  // Update spacetime grid
-  function updateGrid(mass: number) {
-    const k = (mass * G) / (c * c) * 3e2 // Adjusted scaling for visibility
-    const positions = gridGeometry.attributes.position.array as Float32Array
-    const epsilon = 0.55 // Width of curvature
+  // Update spacetime grid with expansion
+  let expansionFactor = 1.0; // Initial scale of the universe
+  const expansionRate = 0.005; // Increased rate for more noticeable expansion
+
+  function updateGrid(mass: number, expansion: number) {
+    const k = (mass * G) / (c * c) * 3e2 / expansion; // Scale k inversely with expansion
+    const positions = gridGeometry.attributes.position.array as Float32Array;
+    const epsilon = 0.5; // Width of curvature
 
     for (let i = 0; i < positions.length; i += 3) {
-      const x = positions[i]
-      const z = positions[i + 1]
-      const r = Math.sqrt(x * x + z * z)
+      const x = positions[i];
+      const z = positions[i + 1];
+      const r = Math.sqrt(x * x + z * z);
 
-      // Use Gaussian function for smooth curved spacetime
-      positions[i + 2] = -k * Math.exp(-(r*r)/(2*epsilon*epsilon))
+      // Use Gaussian function for smooth curved spacetime, adjusted for expansion
+      positions[i + 2] = -k * Math.exp(-(r * r) / (2 * epsilon * epsilon));
     }
 
-    gridGeometry.attributes.position.needsUpdate = true
+    // Scale the grid to simulate cosmic expansion
+    grid.scale.set(expansion, expansion, 1); // Expand in x and y directions
+    console.log('Expansion factor:', expansion); // Log to verify
+
+    gridGeometry.attributes.position.needsUpdate = true;
   }
 
   // Calculate time dilation delta
@@ -323,24 +350,43 @@ const setupThreeScene = (): void => {
   }
 
   // Mass slider elements
-  const massSlider = document.getElementById('massSlider') as HTMLInputElement
-  const massValue = document.getElementById('massValue') as HTMLSpanElement
+  const massSlider = document.getElementById('massSlider') as HTMLInputElement;
+  const massValue = document.getElementById('massValue') as HTMLSpanElement;
+  const universeAgeElement = document.getElementById('universeAge') as HTMLSpanElement;
+  const pauseButton = document.getElementById('pauseButton') as HTMLButtonElement;
+  const resetButton = document.getElementById('resetButton') as HTMLButtonElement;
 
   // Initialize grid with default mass
-  updateGrid(parseFloat(massSlider.value) * 1e24)
+  updateGrid(parseFloat(massSlider.value) * 1e24, expansionFactor);
 
   massSlider.addEventListener('input', () => {
-    const massVal = parseFloat(massSlider.value)
-    massValue.textContent = massVal.toFixed(3)
-    updateGrid(massVal * 1e24)
-  })
+    const massVal = parseFloat(massSlider.value);
+    massValue.textContent = massVal.toFixed(3);
+    updateGrid(massVal * 1e24, expansionFactor);
+  });
+
+  // Pause/Resume and Reset functionality
+  let isPaused = false;
+  pauseButton.addEventListener('click', () => {
+    isPaused = !isPaused;
+    pauseButton.textContent = isPaused ? 'Resume' : 'Pause';
+  });
+
+  resetButton.addEventListener('click', () => {
+    simulationTime = 0;
+    orbitTime = 0; // Reset orbit time
+    expansionFactor = 1.0;
+    updateGrid(parseFloat(massSlider.value) * 1e24, expansionFactor);
+    universeAgeElement.textContent = '0 years';
+  });
 
   // Simulation variables
   let simulationTime = 0;
+  let orbitTime = 0; // Separate time for satellite orbits
 
   // Animation loop
   const animate = (): void => {
-    requestAnimationFrame(animate)
+    requestAnimationFrame(animate);
     const rotation_speed = 0.001;
 
     // Rotate the Earth model if it's loaded
@@ -352,30 +398,51 @@ const setupThreeScene = (): void => {
     receiverParent.rotation.y += rotation_speed; // Same rotation speed as Earth
 
     // Update controls
-    controls.update()
-    // Update satellite positions and clocks
-    const timeSpeed = 10.0; // Increased time speed for more noticeable movement
-    const dt = (0.016 * timeSpeed) / 1e3; // Adjusted scaling for more visible simulation
-    simulationTime += dt;
+    controls.update();
 
-    const mass = parseFloat(massSlider.value) * 1e24;
+    // Update simulation time and universe age only if not paused
+    if (!isPaused) {
+      const timeSpeed = 4132.2; // Adjusted for visible ticking of universe age
+      const dt = (0.016 * timeSpeed) / 1e3; // Adjusted scaling for universe age
+      simulationTime += dt;
+
+      // Separate dt for orbit to maintain original speed
+      const orbitDt = (0.016 * 10.0) / 1e3; // Original time speed for orbits
+      orbitTime += orbitDt;
+
+      // Scale simulationTime to represent the age of the universe
+      // Reach 13.8 billion years in 300 seconds (5 minutes)
+      const simulationDuration = 300;
+      let universeAge = (simulationTime / simulationDuration) * realUniverseAge;
+      universeAge = Math.min(universeAge, realUniverseAge); // Cap at 13.8 billion years
+      universeAgeElement.textContent = `${(universeAge / 1e9).toFixed(1)} billion years`;
+
+      // Update expansion factor (simulating cosmic expansion)
+      expansionFactor += expansionRate * dt;
+      expansionFactor = Math.min(expansionFactor, 3.0); // Cap at 3x size
+
+      // Update grid with current mass and expansion
+      const mass = parseFloat(massSlider.value) * 1e24;
+      updateGrid(mass, expansionFactor);
+    }
 
     // Update satellite positions and clocks
     for (let i = 0; i < numSatellites; i++) {
-      // Calculate new position based on orbit
-      const theta = (i / numSatellites) * Math.PI * 2 + simulationTime * 0.5; // Rotate over time
+      // Calculate new position based on orbit using orbitTime
+      const theta = (i / numSatellites) * Math.PI * 2 + orbitTime * 0.5; // Use orbitTime
       const x = satelliteRadius * Math.cos(theta);
       const z = satelliteRadius * Math.sin(theta); // Use z instead of y for horizontal orbit
       satellites[i].setPosition(x, 0, z); // Position in the x-z plane
 
-      // Update satellite clock
+      // Update satellite clock (using simulationTime for consistency with time dilation)
+      const mass = parseFloat(massSlider.value) * 1e24;
       const delta = calculateDelta(satellites[i], mass);
+      const dt = (0.016 * 1132.2) / 1e3; // Same dt as universe age for clock consistency
       const dtau = (1 + delta) * dt;
       satellites[i].clock += satellites[i].clockRate * dtau;
     }
 
     // Update lines - use receiver's world position
-    // Calculate receiver's world position
     const receiverWorldPosition = new THREE.Vector3();
     receiver.getWorldPosition(receiverWorldPosition);
 
@@ -384,46 +451,47 @@ const setupThreeScene = (): void => {
       lines[i].geometry.setFromPoints([satellites[i].position, receiverWorldPosition]);
     }
 
-    renderer.render(scene, camera)
-  }
+    renderer.render(scene, camera);
+  };
 
-  animate()
+  animate();
 
   // Handle window resize
   window.addEventListener('resize', () => {
-    camera.aspect = container.clientWidth / container.clientHeight
-    camera.updateProjectionMatrix()
-    renderer.setSize(container.clientWidth, container.clientHeight)
-  })
+    camera.aspect = container.clientWidth / container.clientHeight;
+    camera.updateProjectionMatrix();
+    renderer.setSize(container.clientWidth, container.clientHeight);
+  });
+
   // Touch events for mobile
-  let touchStartX = 0
-  let touchStartY = 0
+  let touchStartX = 0;
+  let touchStartY = 0;
 
   container.addEventListener('touchstart', (e) => {
-    touchStartX = e.touches[0].clientX
-    touchStartY = e.touches[0].clientY
-  }, { passive: true })
+    touchStartX = e.touches[0].clientX;
+    touchStartY = e.touches[0].clientY;
+  }, { passive: true });
 
   container.addEventListener('touchmove', (e) => {
-    if (!e.touches.length) return
+    if (!e.touches.length) return;
 
-    const touchX = e.touches[0].clientX
-    const touchY = e.touches[0].clientY
+    const touchX = e.touches[0].clientX;
+    const touchY = e.touches[0].clientY;
 
-    const deltaX = touchX - touchStartX
-    const deltaY = touchY - touchStartY
+    const deltaX = touchX - touchStartX;
+    const deltaY = touchY - touchStartY;
 
     // Rotate camera based on touch movement
-    const rotationSpeed = 0.02
-    controls.target.x -= deltaX * rotationSpeed
-    controls.target.y += deltaY * rotationSpeed
+    const rotationSpeed = 0.02;
+    controls.target.x -= deltaX * rotationSpeed;
+    controls.target.y += deltaY * rotationSpeed;
 
-    touchStartX = touchX
-    touchStartY = touchY
+    touchStartX = touchX;
+    touchStartY = touchY;
 
-    e.preventDefault()
-  }, { passive: false })
-}
+    e.preventDefault();
+  }, { passive: false });
+};
 
 // Initialize Three.js scene
-setupThreeScene()
+setupThreeScene();
