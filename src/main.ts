@@ -3,9 +3,9 @@ import './style.css'
 import * as THREE from 'three'
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 // Import Earth model
-import earthModelPath from './planet_earth/scene.gltf?url';
+const earthModelPath = `${import.meta.env.BASE_URL}planet_earth/scene.gltf`;
 // Import Satellite model
-import satelliteModelPath from './low_poly_satellite/scene.gltf?url';
+const satelliteModelPath = `${import.meta.env.BASE_URL}low_poly_satellite/scene.gltf`;
 // Import Satellite class
 import { Satellite } from './Satellite'
 
