@@ -384,7 +384,6 @@ const setupThreeScene = (): void => {
   // Animation loop
   const animate = (timestamp = 0): void => {
     requestAnimationFrame(animate);
-    const rotation_speed = 0.001;
 
     // Update physics simulation
     physicsSimulation.update(timestamp, parseFloat(massSlider.value) * 1e24);
@@ -395,13 +394,13 @@ const setupThreeScene = (): void => {
     // Update grid with current expansion
     updateGrid(parseFloat(massSlider.value) * 1e24, physicsSimulation.getExpansionFactor());
 
-    // Rotate the Earth model if it's loaded
+    // Update Earth rotation from physics simulation
     if (earth) {
-      earth.rotation.y += rotation_speed;
+      earth.rotation.y = physicsSimulation.getEarthRotation();
     }
 
-    // Rotate the receiver parent to match Earth's rotation
-    receiverParent.rotation.y += rotation_speed;
+    // Update receiver rotation from physics simulation
+    receiverParent.rotation.y = physicsSimulation.getEarthRotation();
 
     // Update controls
     controls.update();

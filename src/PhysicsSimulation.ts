@@ -15,6 +15,8 @@ export class PhysicsSimulation {
     private orbitTime = 0;
     private expansionFactor = 1.0;
     private _isPaused = false;
+    private earthRotationAngle = 0;
+    private earthRotationSpeed = 0.001;
     private lastUpdateTime = 0;
     private accumulator = 0;
     private fixedTimeStep = 1/60; // 60 physics updates per second
@@ -38,7 +40,10 @@ export class PhysicsSimulation {
     }
 
     update(currentTime: number, mass: number) {
-        if (this.isPaused) return;
+        if (this._isPaused) {
+            // When paused, don't update lastUpdateTime to prevent time accumulation
+            return;
+        }
 
         if (this.lastUpdateTime === 0) {
             this.lastUpdateTime = currentTime;
@@ -80,6 +85,9 @@ export class PhysicsSimulation {
             const dtau = (1 + delta) * dt;
             this.satellites[i].clock += this.satellites[i].clockRate * dtau;
         }
+
+        // Update Earth rotation
+        this.earthRotationAngle += this.earthRotationSpeed * dt;
     }
 
     private calculateDelta(satellite: Satellite, mass: number): number {
@@ -102,5 +110,13 @@ export class PhysicsSimulation {
 
     getSatellitePositions(): THREE.Vector3[] {
         return this.satellites.map(s => s.position.clone());
+    }
+
+    getEarthRotation(): number {
+        return this.earthRotationAngle;
+    }
+
+    setEarthRotationSpeed(speed: number) {
+        this.earthRotationSpeed = speed;
     }
 }
