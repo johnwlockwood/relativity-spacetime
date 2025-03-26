@@ -291,22 +291,22 @@ const setupThreeScene = (): void => {
   })
   const grid = new THREE.Mesh(gridGeometry, gridMaterial)
   grid.rotation.x = -Math.PI / 2 // Rotate to make it horizontal (XZ plane)
-  grid.position.y = -1.0 // Slightly below Earth
+  grid.position.y = -0.5 // Slightly below Earth
   scene.add(grid)
 
   // Update spacetime grid
   function updateGrid(mass: number) {
-    const k = (mass * G) / (c * c) * 5e2 // Adjusted scaling for visibility
+    const k = (mass * G) / (c * c) * 3e2 // Adjusted scaling for visibility
     const positions = gridGeometry.attributes.position.array as Float32Array
-    const epsilon = 0.5 // Smoothing factor
+    const epsilon = 0.55 // Width of curvature
 
     for (let i = 0; i < positions.length; i += 3) {
       const x = positions[i]
       const z = positions[i + 1]
       const r = Math.sqrt(x * x + z * z)
 
-      // Use a softened potential to avoid sharp spike at center
-      positions[i + 2] = -k / (r + epsilon)
+      // Use Gaussian function for smooth curved spacetime
+      positions[i + 2] = -k * Math.exp(-(r*r)/(2*epsilon*epsilon))
     }
 
     gridGeometry.attributes.position.needsUpdate = true
