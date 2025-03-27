@@ -3,6 +3,7 @@ import './style.css'
 import * as THREE from 'three'
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js'
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { PhysicsSimulation } from './PhysicsSimulation';
 // Import Earth model
 const earthModelPath = `${import.meta.env.BASE_URL}planet_earth/scene.gltf`;
 // Import Satellite model
@@ -16,8 +17,7 @@ const c = 299792458; // m/s
 const earthRadius = 1; // Visual radius
 const satelliteRadius = 6; // Increased orbit radius to position satellites farther away
 const numSatellites = 9;
-const baseSatelliteSpeed = 3870; // m/s (GPS satellite speed)
-const realUniverseAge = 13.8e9; // Real age of the universe in years (13.8 billion years)
+// These constants are now used in PhysicsSimulation.ts
 
 // Create a container for the Three.js canvas
 document.querySelector<HTMLDivElement>('#app')!.innerHTML = `
@@ -316,7 +316,6 @@ const setupThreeScene = (): void => {
 
   // Update spacetime grid with expansion
   let expansionFactor = 1.0; // Initial scale of the universe
-  const expansionRate = 0.005; // Increased rate for more noticeable expansion
 
   function updateGrid(mass: number, expansion: number) {
     const k = (mass * G) / (c * c) * 3e2 / expansion; // Scale k inversely with expansion
@@ -334,19 +333,8 @@ const setupThreeScene = (): void => {
 
     // Scale the grid to simulate cosmic expansion
     grid.scale.set(expansion, expansion, 1); // Expand in x and y directions
-    console.log('Expansion factor:', expansion); // Log to verify
 
     gridGeometry.attributes.position.needsUpdate = true;
-  }
-
-  // Calculate time dilation delta
-  function calculateDelta(satellite: Satellite, mass: number): number {
-    const r = satellite.position.length();
-    const phiSat = -G * mass / r;
-    const phiReceiver = -G * mass / earthRadius;
-    const v = baseSatelliteSpeed / 1e6; // Scaled down for simulation
-    const delta = (phiSat - phiReceiver) / (c * c) - (v * v) / (2 * c * c);
-    return delta * 1e6; // Exaggerated for visibility
   }
 
   // Mass slider elements
@@ -362,97 +350,115 @@ const setupThreeScene = (): void => {
   massSlider.addEventListener('input', () => {
     const massVal = parseFloat(massSlider.value);
     massValue.textContent = massVal.toFixed(3);
-    updateGrid(massVal * 1e24, expansionFactor);
+    if (physicsWorker) {
+      physicsWorker.postMessage({
+        type: 'massUpdate',
+        payload: { mass: massVal * 1e24 }
+      });
+    } else {
+      physicsSimulation.setMass(massVal * 1e24);
+    }
   });
 
+  // Physics simulation setup
+  let physicsSimulation: PhysicsSimulation;
+  let physicsWorker: Worker | null = null;
+
+  try {
+    // Try to use Web Worker first
+    physicsWorker = new Worker(new URL('./physics.worker.ts', import.meta.url), {
+      type: 'module'
+    });
+    physicsWorker.postMessage({
+      type: 'init',
+      payload: { satellites }
+    });
+  } catch (e) {
+    console.warn('Web Workers not supported, falling back to main thread');
+    physicsSimulation = new PhysicsSimulation(satellites);
+  }
+
   // Pause/Resume and Reset functionality
-  let isPaused = false;
   pauseButton.addEventListener('click', () => {
-    isPaused = !isPaused;
-    pauseButton.textContent = isPaused ? 'Resume' : 'Pause';
+    if (physicsWorker) {
+      physicsWorker.postMessage({
+        type: 'pause',
+        payload: { paused: !pauseButton.textContent?.includes('Resume') }
+      });
+    } else {
+      physicsSimulation.setPaused(!physicsSimulation.isPaused);
+    }
+    pauseButton.textContent = pauseButton.textContent?.includes('Pause') ? 'Resume' : 'Pause';
   });
 
   resetButton.addEventListener('click', () => {
-    simulationTime = 0;
-    orbitTime = 0; // Reset orbit time
-    expansionFactor = 1.0;
-    updateGrid(parseFloat(massSlider.value) * 1e24, expansionFactor);
+    if (physicsWorker) {
+        physicsWorker.postMessage({ type: 'reset' });
+    } else {
+        physicsSimulation.reset();
+    }
+    const resetMass = 5.972;
+    massSlider.value = resetMass.toString();
+    massValue.textContent = resetMass.toFixed(3);
+    updateGrid(resetMass * 1e24, 1.0);
     universeAgeElement.textContent = '0 years';
-  });
-
-  // Simulation variables
-  let simulationTime = 0;
-  let orbitTime = 0; // Separate time for satellite orbits
+});
 
   // Animation loop
-  const animate = (): void => {
+  const animate = (timestamp = 0): void => {
     requestAnimationFrame(animate);
-    const rotation_speed = 0.001;
 
-    // Rotate the Earth model if it's loaded
-    if (earth) {
-      earth.rotation.y += rotation_speed; // Slow rotation around y-axis
+    // Update physics
+    if (physicsWorker) {
+      physicsWorker.postMessage({
+        type: 'update',
+        payload: {
+          timestamp,
+          mass: parseFloat(massSlider.value) * 1e24
+        }
+      });
+    } else {
+      physicsSimulation.setMass(parseFloat(massSlider.value) * 1e24);
+      physicsSimulation.update(timestamp);
     }
-
-    // Rotate the receiver parent to match Earth's rotation
-    receiverParent.rotation.y += rotation_speed; // Same rotation speed as Earth
 
     // Update controls
     controls.update();
-
-    // Update simulation time and universe age only if not paused
-    if (!isPaused) {
-      const timeSpeed = 4132.2; // Adjusted for visible ticking of universe age
-      const dt = (0.016 * timeSpeed) / 1e3; // Adjusted scaling for universe age
-      simulationTime += dt;
-
-      // Separate dt for orbit to maintain original speed
-      const orbitDt = (0.016 * 10.0) / 1e3; // Original time speed for orbits
-      orbitTime += orbitDt;
-
-      // Scale simulationTime to represent the age of the universe
-      // Reach 13.8 billion years in 300 seconds (5 minutes)
-      const simulationDuration = 300;
-      let universeAge = (simulationTime / simulationDuration) * realUniverseAge;
-      universeAge = Math.min(universeAge, realUniverseAge); // Cap at 13.8 billion years
-      universeAgeElement.textContent = `${(universeAge / 1e9).toFixed(1)} billion years`;
-
-      // Update expansion factor (simulating cosmic expansion)
-      expansionFactor += expansionRate * dt;
-      expansionFactor = Math.min(expansionFactor, 3.0); // Cap at 3x size
-
-      // Update grid with current mass and expansion
-      const mass = parseFloat(massSlider.value) * 1e24;
-      updateGrid(mass, expansionFactor);
-    }
-
-    // Update satellite positions and clocks
-    for (let i = 0; i < numSatellites; i++) {
-      // Calculate new position based on orbit using orbitTime
-      const theta = (i / numSatellites) * Math.PI * 2 + orbitTime * 0.5; // Use orbitTime
-      const x = satelliteRadius * Math.cos(theta);
-      const z = satelliteRadius * Math.sin(theta); // Use z instead of y for horizontal orbit
-      satellites[i].setPosition(x, 0, z); // Position in the x-z plane
-
-      // Update satellite clock (using simulationTime for consistency with time dilation)
-      const mass = parseFloat(massSlider.value) * 1e24;
-      const delta = calculateDelta(satellites[i], mass);
-      const dt = (0.016 * 1132.2) / 1e3; // Same dt as universe age for clock consistency
-      const dtau = (1 + delta) * dt;
-      satellites[i].clock += satellites[i].clockRate * dtau;
-    }
-
-    // Update lines - use receiver's world position
-    const receiverWorldPosition = new THREE.Vector3();
-    receiver.getWorldPosition(receiverWorldPosition);
-
-    // Update lines to connect satellites to the receiver's world position
-    for (let i = 0; i < numSatellites; i++) {
-      lines[i].geometry.setFromPoints([satellites[i].position, receiverWorldPosition]);
-    }
-
     renderer.render(scene, camera);
   };
+
+  // Handle worker messages
+  if (physicsWorker) {
+    physicsWorker.onmessage = (e) => {
+      const { type, payload } = e.data;
+      if (type === 'update') {
+        // Update UI
+        universeAgeElement.textContent = `${(payload.universeAge / 1e9).toFixed(1)} billion years`;
+        
+        // Update grid
+        updateGrid(payload.mass, payload.expansion);
+        
+        // Update Earth and receiver rotation
+        if (earth) earth.rotation.y = payload.rotation;
+        receiverParent.rotation.y = payload.rotation;
+        
+        // Update satellite positions
+        for (let i = 0; i < numSatellites; i++) {
+          satellites[i].setPosition(payload.positions[i].x, payload.positions[i].y, payload.positions[i].z);
+        }
+        
+        // Update lines
+        const receiverWorldPosition = new THREE.Vector3();
+        receiver.getWorldPosition(receiverWorldPosition);
+        for (let i = 0; i < numSatellites; i++) {
+          lines[i].geometry.setFromPoints([
+            new THREE.Vector3(payload.positions[i].x, payload.positions[i].y, payload.positions[i].z),
+            receiverWorldPosition
+          ]);
+        }
+      }
+    };
+  }
 
   animate();
 
