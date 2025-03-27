@@ -5,6 +5,8 @@ export class PhysicsSimulation {
     private G = 6.6743e-11; // m³ kg⁻¹ s⁻²
     private c = 299792458; // m/s
     private earthRadius = 1;
+    private initialMass = 5.972e24; // Default Earth mass in kg
+    private mass = this.initialMass; // Current mass
     private satelliteRadius = 6;
     private baseSatelliteSpeed = 3870; // m/s (GPS satellite speed)
     private realUniverseAge = 13.8e9; // Real age of the universe in years (13.8 billion years)
@@ -41,9 +43,18 @@ export class PhysicsSimulation {
         this.simulationTime = 0;
         this.orbitTime = 0;
         this.expansionFactor = 1.0;
+        this.mass = this.initialMass;
     }
 
-    update(currentTime: number, mass: number) {
+    getMass(): number {
+        return this.mass;
+    }
+
+    setMass(mass: number) {
+        this.mass = mass;
+    }
+
+    update(currentTime: number) {
         if (this._isPaused) {
             // When paused, don't update lastUpdateTime to prevent time accumulation
             return;
@@ -60,12 +71,12 @@ export class PhysicsSimulation {
         // Fixed timestep physics
         this.accumulator += deltaTime;
         while (this.accumulator >= this.fixedTimeStep) {
-            this.fixedUpdate(mass);
+            this.fixedUpdate();
             this.accumulator -= this.fixedTimeStep;
         }
     }
 
-    private fixedUpdate(mass: number) {
+    private fixedUpdate() {
         const timeSpeed = 4132.2;
         const dt = (this.fixedTimeStep * timeSpeed) / 1e3;
         this.simulationTime += dt;
@@ -85,7 +96,7 @@ export class PhysicsSimulation {
             const z = this.satelliteRadius * Math.sin(theta);
             this.satellites[i].setPosition(x, 0, z);
 
-            const delta = this.calculateDelta(this.satellites[i], mass);
+            const delta = this.calculateDelta(this.satellites[i]);
             const dtau = (1 + delta) * dt;
             this.satellites[i].clock += this.satellites[i].clockRate * dtau;
         }
@@ -94,10 +105,10 @@ export class PhysicsSimulation {
         this.earthRotationAngle += this.earthRotationSpeed * dt;
     }
 
-    private calculateDelta(satellite: Satellite, mass: number): number {
+    private calculateDelta(satellite: Satellite): number {
         const r = satellite.position.length();
-        const phiSat = -this.G * mass / r;
-        const phiReceiver = -this.G * mass / this.earthRadius;
+        const phiSat = -this.G * this.mass / r;
+        const phiReceiver = -this.G * this.mass / this.earthRadius;
         const v = this.baseSatelliteSpeed / 1e6;
         return (phiSat - phiReceiver) / (this.c * this.c) - (v * v) / (2 * this.c * this.c);
     }

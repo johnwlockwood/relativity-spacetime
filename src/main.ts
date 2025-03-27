@@ -350,7 +350,14 @@ const setupThreeScene = (): void => {
   massSlider.addEventListener('input', () => {
     const massVal = parseFloat(massSlider.value);
     massValue.textContent = massVal.toFixed(3);
-    updateGrid(massVal * 1e24, expansionFactor);
+    if (physicsWorker) {
+      physicsWorker.postMessage({
+        type: 'massUpdate',
+        payload: { mass: massVal * 1e24 }
+      });
+    } else {
+      physicsSimulation.setMass(massVal * 1e24);
+    }
   });
 
   // Physics simulation setup
@@ -386,13 +393,16 @@ const setupThreeScene = (): void => {
 
   resetButton.addEventListener('click', () => {
     if (physicsWorker) {
-      physicsWorker.postMessage({ type: 'reset' });
+        physicsWorker.postMessage({ type: 'reset' });
     } else {
-      physicsSimulation.reset();
+        physicsSimulation.reset();
     }
-    updateGrid(parseFloat(massSlider.value) * 1e24, 1.0);
+    const resetMass = 5.972;
+    massSlider.value = resetMass.toString();
+    massValue.textContent = resetMass.toFixed(3);
+    updateGrid(resetMass * 1e24, 1.0);
     universeAgeElement.textContent = '0 years';
-  });
+});
 
   // Animation loop
   const animate = (timestamp = 0): void => {
@@ -408,7 +418,8 @@ const setupThreeScene = (): void => {
         }
       });
     } else {
-      physicsSimulation.update(timestamp, parseFloat(massSlider.value) * 1e24);
+      physicsSimulation.setMass(parseFloat(massSlider.value) * 1e24);
+      physicsSimulation.update(timestamp);
     }
 
     // Update controls
@@ -425,7 +436,7 @@ const setupThreeScene = (): void => {
         universeAgeElement.textContent = `${(payload.universeAge / 1e9).toFixed(1)} billion years`;
         
         // Update grid
-        updateGrid(parseFloat(massSlider.value) * 1e24, payload.expansion);
+        updateGrid(payload.mass, payload.expansion);
         
         // Update Earth and receiver rotation
         if (earth) earth.rotation.y = payload.rotation;

@@ -24,7 +24,8 @@ self.onmessage = (e: MessageEvent) => {
 
     case 'update':
       if (!simulation) return;
-      simulation.update(payload.timestamp, payload.mass);
+      simulation.setMass(payload.mass);
+      simulation.update(payload.timestamp);
       
       // Send back updated state
       self.postMessage({
@@ -33,7 +34,8 @@ self.onmessage = (e: MessageEvent) => {
           positions: simulation.getSatellitePositions(),
           rotation: simulation.getEarthRotation(),
           expansion: simulation.getExpansionFactor(),
-          universeAge: simulation.getUniverseAge()
+          universeAge: simulation.getUniverseAge(),
+          mass: simulation.getMass()
         }
       });
       break;
