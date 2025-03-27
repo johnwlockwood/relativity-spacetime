@@ -300,39 +300,72 @@ const setupThreeScene = (): void => {
   }
 
   // Spacetime grid
-  const gridSize = 10 // Increased size for better visibility
-  const gridStep = 0.2
-  // Create a proper 3D surface grid
-  const gridGeometry = new THREE.PlaneGeometry(gridSize, gridSize, gridSize / gridStep, gridSize / gridStep)
+  // Original grid parameters
+  const originalGridSize = 3.0;
+  const originalGridSegments = 4.0;
+  const originalSegments = Math.ceil(originalGridSize * originalGridSegments);
+  let expansionFactor = 1.0; // Initial scale of the universe
+  let gridSize = originalGridSize; // Start at size 1
+  let gridSegments = originalSegments;
+  let gridGeometry = new THREE.PlaneGeometry(gridSize, gridSize, gridSegments, gridSegments);
   const gridMaterial = new THREE.MeshBasicMaterial({
     color: "rgb(0, 161, 140)",
     wireframe: true,
-    side: THREE.DoubleSide  // Make the grid visible from both sides
-  })
-  const grid = new THREE.Mesh(gridGeometry, gridMaterial)
-  grid.rotation.x = -Math.PI / 2 // Rotate to make it horizontal (XZ plane)
-  grid.position.y = -1.0 // Lowered to make expansion more visible
-  scene.add(grid)
+    side: THREE.DoubleSide
+  });
+  const grid = new THREE.Mesh(gridGeometry, gridMaterial);
+  grid.rotation.x = -Math.PI / 2;
+  grid.position.y = -1.0;
+  scene.add(grid);
 
-  // Update spacetime grid with expansion
-  let expansionFactor = 1.0; // Initial scale of the universe
+  // Track when to increase grid resolution
+  let lastResolutionIncrease = 1.0;
+  const resolutionIncreaseFactor = 1.2;
 
   function updateGrid(mass: number, expansion: number) {
-    const k = (mass * G) / (c * c) * 3e2 / expansion; // Scale k inversely with expansion
+    // Increase grid resolution when expansion crosses threshold
+    if (expansion >= lastResolutionIncrease * resolutionIncreaseFactor) {
+      // Get current physical size before changing geometry
+      const currentPhysicalSize = originalGridSize * expansion;
+      console.log("gridSize: " + gridSize);
+      console.log("currentPhysicalSize: " + currentPhysicalSize);
+
+      lastResolutionIncrease = expansion;
+      gridSize = currentPhysicalSize; // Maintain current visual size
+      gridSegments = Math.ceil(gridSize * 4); // about four segments per 1.0
+
+      console.log("grid.scale.x: " + grid.scale.x + " expansion: " + expansion + 
+        + "  grid size: " + gridSize + " N segments: " + gridSegments);
+
+      // Create new geometry with more segments at base size 1
+      const newGeometry = new THREE.PlaneGeometry(
+        gridSize / expansion, // Base size
+        gridSize / expansion, // Base size 
+        gridSegments,
+        gridSegments
+      );
+
+      // Replace geometry while maintaining current scale
+      grid.geometry.dispose();
+      grid.geometry = newGeometry;
+      gridGeometry = newGeometry;
+    }
+
+    // Update curvature for current geometry
+    const k = (mass * G) / (c * c) * 3e2;
+    const epsilon = 0.5 / expansion;
     const positions = gridGeometry.attributes.position.array as Float32Array;
-    const epsilon = 0.5; // Width of curvature
 
     for (let i = 0; i < positions.length; i += 3) {
       const x = positions[i];
       const z = positions[i + 1];
       const r = Math.sqrt(x * x + z * z);
-
-      // Use Gaussian function for smooth curved spacetime, adjusted for expansion
       positions[i + 2] = -k * Math.exp(-(r * r) / (2 * epsilon * epsilon));
     }
 
-    // Scale the grid to simulate cosmic expansion
-    grid.scale.set(expansion, expansion, 1); // Expand in x and y directions
+    // Scale the grid smoothly
+    const targetScale = expansion;
+    grid.scale.lerp(new THREE.Vector3(targetScale, targetScale, 1), 0.1);
 
     gridGeometry.attributes.position.needsUpdate = true;
   }
@@ -393,16 +426,36 @@ const setupThreeScene = (): void => {
 
   resetButton.addEventListener('click', () => {
     if (physicsWorker) {
-        physicsWorker.postMessage({ type: 'reset' });
+      physicsWorker.postMessage({ type: 'reset' });
     } else {
-        physicsSimulation.reset();
+      physicsSimulation.reset();
     }
     const resetMass = 5.972;
     massSlider.value = resetMass.toString();
     massValue.textContent = resetMass.toFixed(3);
+
+    // Reset grid to original state
+    gridSize = originalGridSize;
+    lastResolutionIncrease = 1.0;
+
+    // Create new geometry with original segments
+    const newGeometry = new THREE.PlaneGeometry(
+      originalGridSize,
+      originalGridSize,
+      originalSegments,
+      originalSegments
+    );
+
+    // Replace geometry
+    grid.geometry.dispose();
+    grid.geometry = newGeometry;
+    gridGeometry = newGeometry;
+
+    // Reset scale and update curvature
+    grid.scale.set(1, 1, 1);
     updateGrid(resetMass * 1e24, 1.0);
     universeAgeElement.textContent = '0 years';
-});
+  });
 
   // Animation loop
   const animate = (timestamp = 0): void => {
@@ -434,19 +487,19 @@ const setupThreeScene = (): void => {
       if (type === 'update') {
         // Update UI
         universeAgeElement.textContent = `${(payload.universeAge / 1e9).toFixed(1)} billion years`;
-        
+
         // Update grid
         updateGrid(payload.mass, payload.expansion);
-        
+
         // Update Earth and receiver rotation
         if (earth) earth.rotation.y = payload.rotation;
         receiverParent.rotation.y = payload.rotation;
-        
+
         // Update satellite positions
         for (let i = 0; i < numSatellites; i++) {
           satellites[i].setPosition(payload.positions[i].x, payload.positions[i].y, payload.positions[i].z);
         }
-        
+
         // Update lines
         const receiverWorldPosition = new THREE.Vector3();
         receiver.getWorldPosition(receiverWorldPosition);
