@@ -2,7 +2,13 @@
 
 ## Changes Made
 
-1. **Physics Simulation Class**:
+1. **Mass Update Improvements**:
+   - Physics simulation now controls all mass-related grid updates
+   - UI sends mass changes to physics worker instead of direct updates
+   - Added proper mass reset functionality
+   - Fixed conflict between UI and physics mass updates
+
+2. **Physics Simulation Class**:
    - Created `PhysicsSimulation.ts` to handle all physics calculations
    - Implemented fixed timestep updates (60fps) independent of rendering
    - Handles:
