@@ -26,7 +26,7 @@ self.onmessage = (e: MessageEvent) => {
       if (!simulation) return;
       simulation.setMass(payload.mass);
       simulation.update(payload.timestamp);
-      
+
       // Send back updated state
       self.postMessage({
         type: 'update',

@@ -11,7 +11,7 @@ export class PhysicsSimulation {
     private baseSatelliteSpeed = 3870; // m/s (GPS satellite speed)
     private realUniverseAge = 13.8e9; // Real age of the universe in years (13.8 billion years)
     private expansionRate = 0.02; // 4x faster expansion
-    
+
     private satellites: Satellite[] = [];
     private simulationTime = 0;
     private orbitTime = 0;
@@ -21,7 +21,7 @@ export class PhysicsSimulation {
     private earthRotationSpeed = 0.001;
     private lastUpdateTime = 0;
     private accumulator = 0;
-    private fixedTimeStep = 1/60; // 60 physics updates per second
+    private fixedTimeStep = 1 / 60; // 60 physics updates per second
 
     get isPaused(): boolean {
         return this._isPaused;
