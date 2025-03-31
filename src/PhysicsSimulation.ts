@@ -10,8 +10,8 @@ export class PhysicsSimulation {
     private satelliteRadius = 6;
     private baseSatelliteSpeed = 3870; // m/s (GPS satellite speed)
     private realUniverseAge = 13.8e9; // Real age of the universe in years (13.8 billion years)
-    private expansionRate = 0.005;
-    
+    private expansionRate = 0.02; // 4x faster expansion
+
     private satellites: Satellite[] = [];
     private simulationTime = 0;
     private orbitTime = 0;
@@ -21,7 +21,7 @@ export class PhysicsSimulation {
     private earthRotationSpeed = 0.001;
     private lastUpdateTime = 0;
     private accumulator = 0;
-    private fixedTimeStep = 1/60; // 60 physics updates per second
+    private fixedTimeStep = 1 / 60; // 60 physics updates per second
 
     get isPaused(): boolean {
         return this._isPaused;
@@ -84,10 +84,8 @@ export class PhysicsSimulation {
         // Separate dt for orbit to maintain original speed
         const orbitDt = (this.fixedTimeStep * 10.0) / 1e3;
         this.orbitTime += orbitDt;
-
-        // Update expansion factor
         this.expansionFactor += this.expansionRate * dt;
-        this.expansionFactor = Math.min(this.expansionFactor, 3.0);
+        this.expansionFactor = Math.min(this.expansionFactor, 7.0); // Cap expansion factor
 
         // Update satellite positions and clocks
         for (let i = 0; i < this.satellites.length; i++) {
