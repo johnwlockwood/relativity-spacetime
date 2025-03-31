@@ -11,3 +11,5 @@ This project is a simulation designed for a science fair context, aiming to expl
 ## Purpose:
 
 The primary goal is to provide an interactive visualization that helps in understanding how velocity and gravity affect time and space according to relativistic physics.
+
+[Demo](https://relativity-spacetime.netlify.app/)
