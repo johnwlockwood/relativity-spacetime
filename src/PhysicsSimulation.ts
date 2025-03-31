@@ -11,7 +11,6 @@ export class PhysicsSimulation {
     private baseSatelliteSpeed = 3870; // m/s (GPS satellite speed)
     private realUniverseAge = 13.8e9; // Real age of the universe in years (13.8 billion years)
     private expansionRate = 0.02; // 4x faster expansion
-    private currentExpansionRate = this.expansionRate;
     
     private satellites: Satellite[] = [];
     private simulationTime = 0;
@@ -85,7 +84,7 @@ export class PhysicsSimulation {
         // Separate dt for orbit to maintain original speed
         const orbitDt = (this.fixedTimeStep * 10.0) / 1e3;
         this.orbitTime += orbitDt;
-        this.expansionFactor += this.currentExpansionRate * dt;
+        this.expansionFactor += this.expansionRate * dt;
 
         // Update satellite positions and clocks
         for (let i = 0; i < this.satellites.length; i++) {
