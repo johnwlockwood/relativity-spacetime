@@ -2,7 +2,7 @@ import { defineConfig } from 'vite';
 import { visualizer } from 'rollup-plugin-visualizer'
 
 export default defineConfig({
-    base: '/relativity-spacetime/',
+    base: '/',
     worker: {
         format: 'es',
         plugins: () => [],
