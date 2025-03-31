@@ -85,6 +85,7 @@ export class PhysicsSimulation {
         const orbitDt = (this.fixedTimeStep * 10.0) / 1e3;
         this.orbitTime += orbitDt;
         this.expansionFactor += this.expansionRate * dt;
+        this.expansionFactor = Math.min(this.expansionFactor, 10.0); // Cap expansion factor
 
         // Update satellite positions and clocks
         for (let i = 0; i < this.satellites.length; i++) {
